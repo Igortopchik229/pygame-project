@@ -7,6 +7,7 @@ hero_group = pg.sprite.Group()
 meteor_group = pg.sprite.Group()
 bullet_group = pg.sprite.Group()
 wight, height = size = 600, 700
+paused = 0
 
 
 def load_image(name, colorkey=None):
@@ -63,32 +64,60 @@ class Meteor(pg.sprite.Sprite):
         self.rect.x = randint(0, wight - self.size[0])
         self.vx = randint(-4, 4)
         self.vy = randint(5, 9)
-        self.collides_count = 0
+        self.collides_count_player = 0
+        self.collides_count_bullet = 0
         self.mask = pg.mask.from_surface(self.image)
 
+    def new_meteor(self):
+        self.rect.y = randint(-3 * self.size[-1], -self.size[1])
+        self.rect.x = randint(0, wight - self.size[0])
+        self.vx = randint(-4, 4)
+        self.vy = randint(5, 10)
+
     def update(self):
+        global paused
         self.rect.x += self.vx
         self.rect.y += self.vy
         if self.rect.x > wight or self.rect.x < -self.size[0] or self.rect.y > size[1] + self.size[1]:
-            self.rect.y = randint(-3 * self.size[-1], -self.size[1])
-            self.rect.x = randint(0, wight - self.size[0])
-            self.vx = randint(-4, 4)
-            self.vy = randint(5, 10)
+            self.new_meteor()
         if pg.sprite.collide_mask(self, player):
-            self.collides_count += 1
-            if self.collides_count >= 3:
+            self.collides_count_player += 1
+            if self.collides_count_player == 2:
+                paused = True
                 print('dead')
         else:
-            self.collides_count = 0
+            self.collides_count_player = 0
+        if pg.sprite.spritecollide(self, bullet_group, False):
+            self.collides_count_bullet += 1
+            if self.collides_count_bullet == 2:
+                pg.sprite.spritecollide(self, bullet_group, True)
+                self.collides_count_bullet = 0
+                self.new_meteor()
+        else:
+            self.collides_count_bullet = 0
 
 
-class Bullet:
-    def __init__(self):
+class Bullet(pg.sprite.Sprite):
+    def __init__(self, pos):
         super().__init__(bullet_group)
         self.image = load_image('bullet.png')
+        self.size = self.image.get_size()
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1] - self.size[1]
+        self.vy = 8
+        self.mask = pg.mask.from_surface(self.image)
+        self.collides_count_meteor = 0
+
+    def update(self):
+        # print(self.rect.x, self.rect.y)
+        self.rect.y -= self.vy
+        if self.rect.y < -self.size[1]:
+            self.kill()
 
 
 def main():
+    pg.display.set_caption('spaceship vs meteorites')
     screen = pg.display.set_mode((1000, 480))
     font_input = pg.font.Font(None, 32)
     input_box = pg.Rect(555, 5, 140, 32)
@@ -158,45 +187,65 @@ def main():
 
 
 def start_game(lvl):
-    global player
+    global player, paused
     clock = pg.time.Clock()
     running = True
     fps = 60
     screen = pg.display.set_mode(size)
     player = Player(lvl)
     go_left, go_right = False, False
-    # left_top = (-meteor_image_size[0], -meteor_image_size[1])
-    # right_top = (screen.get_size()[0] + meteor_image_size[0], -meteor_image_size[1])
-    # right_bottom = (screen.get_size()[0] + meteor_image_size[0], screen.get_size()[1] + meteor_image_size[1])
-    # left_bottom = (-meteor_image_size[0], screen.get_size()[1] + meteor_image_size[1])
     for i in range(lvl * 3):
         Meteor()
-
     while running:
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                running = False
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_LEFT:
-                    go_left = True
-                elif event.key == pg.K_RIGHT:
-                    go_right = True
-            if event.type == pg.KEYUP:
-                if event.key == pg.K_LEFT:
-                    go_left = False
-                elif event.key == pg.K_RIGHT:
-                    go_right = False
-        if go_right:
-            player.move_r()
-        if go_left:
-            player.move_l()
+        if not paused:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_LEFT:
+                        go_left = True
+                    if event.key == pg.K_RIGHT:
+                        go_right = True
+                    if event.key == pg.K_SPACE:
+                        print('shoot')
+                        Bullet((player.rect.x + player.size[0] // 2, height - player.size[1]))
+                    if event.key == pg.K_p:
+                        paused = (paused + 1) % 2
+                if event.type == pg.KEYUP:
+                    if event.key == pg.K_LEFT:
+                        go_left = False
+                    elif event.key == pg.K_RIGHT:
+                        go_right = False
+            if go_right:
+                player.move_r()
+            if go_left:
+                player.move_l()
 
-        screen.fill((255, 255, 255))
-        hero_group.draw(screen)
-        meteor_group.draw(screen)
-        meteor_group.update()
-        clock.tick(fps)
-        pg.display.flip()
+            screen.fill((255, 255, 255))
+            hero_group.draw(screen)
+            meteor_group.draw(screen)
+            bullet_group.draw(screen)
+            meteor_group.update()
+            bullet_group.update()
+            clock.tick(fps)
+            pg.display.flip()
+        else:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_p:
+                        paused = (paused + 1) % 2
+                    if event.key == pg.K_LEFT:
+                        go_left = True
+                    if event.key == pg.K_RIGHT:
+                        go_right = True
+                if event.type == pg.KEYUP:
+                    if event.key == pg.K_LEFT:
+                        go_left = False
+                    elif event.key == pg.K_RIGHT:
+                        go_right = False
+
 
 if __name__ == '__main__':
     pg.init()
