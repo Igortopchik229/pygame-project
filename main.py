@@ -211,6 +211,9 @@ def main():
                 if active:
                     if event.key == pg.K_BACKSPACE:
                         text = text[:-1]
+                    elif event.key == pg.K_RETURN:
+                        color = color_inactive
+                        active = False
                     else:
                         if len(text) < 34:
                             text += event.unicode
@@ -431,12 +434,14 @@ if __name__ == '__main__':
     while not close:
         if mode == 1:
             update_sprites()
-            mode = game_over(score_now, lvl, start_game(lvl))
+            screen = start_game(lvl)
+            mode = game_over(score_now, lvl, screen)
         elif mode == 2:
             nick = 'NoName'
             update_sprites()
             lvl = main()
-            mode = game_over(score_now, lvl, start_game(lvl))
+            screen = start_game(lvl)
+            mode = game_over(score_now, lvl, screen)
         else:
             close = True
     pg.quit()
