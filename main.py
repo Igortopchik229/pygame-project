@@ -183,7 +183,7 @@ def main():
     level_2_score_name = pg.font.Font(None, 40)
     level_3_score_name = pg.font.Font(None, 40)
     color_active = pg.Color('dodgerblue2')
-    manual = pg.font.Font(None, 32)
+    manual_nick = pg.font.Font(None, 32)
     text_manual = 'Press here and input your nickname -->'
     color = color_inactive
     active = False
@@ -220,7 +220,7 @@ def main():
                             nick = text
         screen.fill((30, 30, 30))
         txt_surface = font_input.render(text, True, color)
-        manual_r = manual.render(text_manual, True, color_inactive)
+        manual_r = manual_nick.render(text_manual, True, color_inactive)
         lvl1 = level_1_text.render('Level 1', True, color_inactive)
         lvl2 = level_2_text.render('Level 2', True, color_inactive)
         lvl3 = level_3_text.render('Level 3', True, color_inactive)
