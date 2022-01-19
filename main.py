@@ -159,7 +159,7 @@ class Particle(pg.sprite.Sprite):
 def main():
     global nick, screen  # global nick name, screen
     pg.display.set_caption('spaceship vs meteorites')  # caption
-    screen = pg.display.set_mode((1000, 480))  # screen menu
+    screen = pg.display.set_mode((1000, 200))  # screen menu
     font_input = pg.font.Font(None, 32)  # font input
     input_box = pg.Rect(430, 5, 140, 32)  # input box
     level_1_text = pg.font.Font(None, 40)  # font lvl1
@@ -217,7 +217,7 @@ def main():
                         color = color_inactive
                         active = False  # input box not active
                     else:
-                        if len(text) < 34:  # max len nick 33
+                        if len(text) < 32:  # max len nick 33
                             text += event.unicode  # change text
                             nick = text
         screen.fill((30, 30, 30))  # gray color
@@ -408,6 +408,8 @@ def game_over(scr, lvl, screen):
 
     while running:
         for event in pg.event.get():
+            if event.type == pg.QUIT:
+                running = False
             if event.type == pg.MOUSEBUTTONDOWN:
                 if box_try_again.collidepoint(event.pos):
                     return 1
@@ -415,6 +417,8 @@ def game_over(scr, lvl, screen):
                     return 2
                 if box_exit.collidepoint(event.pos):
                     return 3
+
+        # show buttons
         pg.draw.rect(screen, pg.Color('white'), box_exit, 3)
         pg.draw.rect(screen, pg.Color('white'), box_go_menu, 3)
         pg.draw.rect(screen, pg.Color('white'), box_try_again, 3)
@@ -437,22 +441,35 @@ def update_sprites():  # clear all sprites, score, flags
     game_end = 0
 
 
+def check_type(obj):  # check that fucn return None
+    if obj == None:
+        pg.quit()
+        quit()
+
+
 if __name__ == '__main__':
     pg.init()
     close = False
     lvl = main()
+    check_type(lvl)
     screen = start_game(lvl)
+    check_type(screen)
     mode = game_over(score_now, lvl, screen)
     while not close:
         if mode == 1:  # mode 1 try again
             update_sprites()
             screen = start_game(lvl)
+            check_type(screen)
             mode = game_over(score_now, lvl, screen)
+            check_type(mode)
         elif mode == 2:  # mode 2 go menu
             update_sprites()
             lvl = main()
+            check_type(lvl)
             screen = start_game(lvl)
+            check_type(screen)
             mode = game_over(score_now, lvl, screen)
+            check_type(mode)
         else:  # mode 3 close game
             close = True
     pg.quit()
