@@ -3,21 +3,20 @@ import os
 import sys
 from random import randint, choice
 
-hero_group = pg.sprite.Group()
-meteor_group = pg.sprite.Group()
-bullet_group = pg.sprite.Group()
-stars = pg.sprite.Group()
-screen = pg.display.set_mode((1000, 480))
-wight, height = size = 600, 700
-paused = 0
-nick = 'NoName'
-score_now = 0
-game_end = 0
+hero_group = pg.sprite.Group()  # sprite group for player
+meteor_group = pg.sprite.Group()  # sprite group for meteorites
+bullet_group = pg.sprite.Group()  # sprite group for meteorites
+stars = pg.sprite.Group()  # sprite group for stars(animation)
+screen = pg.display.set_mode((1000, 480))  # start menu window
+wight, height = size = 600, 700  # display size for game
+paused = 0  # flag for pause
+nick = 'NoName'  # default nick
+score_now = 0  # score
+game_end = 0  # flag for detect lose
 
 
-def load_image(name, colorkey=None):
+def load_image(name, colorkey=None):  # function for load image
     fullname = os.path.join('data', name)
-    # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
@@ -35,31 +34,31 @@ def load_image(name, colorkey=None):
 class Player(pg.sprite.Sprite):
     def __init__(self, level):
         super().__init__(hero_group)
-        self.v = 7
-        self.image = load_image('player.png')
-        self.rect = self.image.get_rect()
-        self.size = self.image.get_size()
-        self.rect.y = height - self.size[1]
-        self.rect.x = (wight - self.size[0]) // 2
-        self.mask = pg.mask.from_surface(self.image)
+        self.v = 7  # speed
+        self.image = load_image('player.png')  # player image
+        self.rect = self.image.get_rect()  # player rect
+        self.size = self.image.get_size()  # size image
+        self.rect.y = height - self.size[1]  # start position y
+        self.rect.x = (wight - self.size[0]) // 2  # start position x
+        self.mask = pg.mask.from_surface(self.image)  # image mask
 
-    def move_r(self):
+    def move_r(self):  # move right
         if self.rect.x + self.v <= wight - self.size[0]:
             self.rect.x += self.v
 
-    def move_l(self):
+    def move_l(self):  # move left
         if self.rect.x - self.v >= 0:
             self.rect.x -= self.v
 
-    def move_u(self):
+    def move_u(self):  # move up
         if self.rect.y - self.v >= 0:
             self.rect.y -= self.v
 
-    def move_d(self):
+    def move_d(self):  # move down
         if self.rect.y + self.v <= height - self.size[1]:
             self.rect.y += self.v
 
-    def update(self):
+    def update(self):  # kill player sprite if game end == 1
         if game_end:
             self.kill()
 
@@ -67,43 +66,43 @@ class Player(pg.sprite.Sprite):
 class Meteor(pg.sprite.Sprite):
     def __init__(self, level):
         super().__init__(meteor_group)
-        self.level = level
-        self.image = load_image('meteor.png')
-        self.size = self.image.get_size()
-        self.rect = self.image.get_rect()
-        self.rect.y = randint(-3 * self.size[-1], -self.size[1])
-        self.rect.x = randint(0, wight - self.size[0])
-        self.vx = randint(-4, 4)
-        self.vy = randint(5, 9)
-        self.collides_count_player = 0
-        self.collides_count_bullet = 0
-        self.mask = pg.mask.from_surface(self.image)
+        self.level = level  # level
+        self.image = load_image('meteor.png')  # meteorite image
+        self.rect = self.image.get_rect()  # size image
+        self.size = self.image.get_size()  # rect size
+        self.rect.y = randint(-3 * self.size[-1], -self.size[1])  # start position y
+        self.rect.x = randint(0, wight - self.size[0])  # start position x
+        self.vx = randint(-4, 4)  # speed x
+        self.vy = randint(5, 10)  # speed y
+        self.collides_count_player = 0  # collides with player
+        self.collides_count_bullet = 0  # collides with bullet
+        self.mask = pg.mask.from_surface(self.image)  # mask image
 
-    def new_meteor(self):
-        self.rect.y = -self.size[1]
-        self.rect.x = randint(0, wight - self.size[0])
+    def new_meteor(self):  # respawn meteorite
+        self.rect.y = -self.size[1]  # start position y
+        self.rect.x = randint(0, wight - self.size[0])  # start position x
         self.vx = randint(-4, 4)
         self.vy = randint(5, 10)
 
     def update(self):
         global game_end, score_now
-        self.rect.x += self.vx
-        self.rect.y += self.vy
+        self.rect.x += self.vx  # move x
+        self.rect.y += self.vy  # move y
         if self.rect.x > wight or self.rect.x < -self.size[0] or self.rect.y > size[1] + self.size[1]:
-            self.new_meteor()
-        if pg.sprite.collide_mask(self, player):
+            self.new_meteor()  # if meteor not on display
+        if pg.sprite.collide_mask(self, player):  # collide with player
             self.collides_count_player += 1
-            if self.collides_count_player == 2:
-                game_end = 1
+            if self.collides_count_player == 2:  # if 2 collides with player
+                game_end = 1  # lose
         else:
             self.collides_count_player = 0
-        if pg.sprite.spritecollide(self, bullet_group, False):
+        if pg.sprite.spritecollide(self, bullet_group, False):  # collide with bullet group
             self.collides_count_bullet += 1
             if self.collides_count_bullet == 2:
-                pg.sprite.spritecollide(self, bullet_group, True)
+                pg.sprite.spritecollide(self, bullet_group, True)  # destroy bullet
                 score_now += 1
                 self.collides_count_bullet = 0
-                self.new_meteor()
+                self.new_meteor()  # respawn meteor
         else:
             self.collides_count_bullet = 0
 
@@ -111,18 +110,19 @@ class Meteor(pg.sprite.Sprite):
 class Bullet(pg.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(bullet_group)
-        self.image = load_image('bullet.png')
-        self.size = self.image.get_size()
-        self.rect = self.image.get_rect()
-        self.rect.x = pos[0]
-        self.rect.y = pos[1] - self.size[1]
-        self.vy = 8
-        self.mask = pg.mask.from_surface(self.image)
-        self.collides_count_meteor = 0
+        self.image = load_image('bullet.png')  # bullet image
+        self.size = self.image.get_size()  # image size
+        self.rect = self.image.get_rect()  # rect
+        self.rect.x = pos[0]  # start position x
+        self.rect.y = pos[1] - self.size[1]  # start position y
+        self.vy = 8  # speed
+        self.mask = pg.mask.from_surface(self.image)  # image mask
 
     def update(self):
-        # print(self.rect.x, self.rect.y)
-        self.rect.y -= self.vy
+        if self.rect.y - self.vy > -self.size[1]:  # if bullet on display
+            self.rect.y -= self.vy  # move up
+        else:
+            self.kill()  # destroy bullet
 
 
 class Particle(pg.sprite.Sprite):
@@ -157,20 +157,22 @@ class Particle(pg.sprite.Sprite):
 
 
 def main():
-    global nick
-    pg.display.set_caption('spaceship vs meteorites')
-    screen = pg.display.set_mode((1000, 480))
-    font_input = pg.font.Font(None, 32)
-    input_box = pg.Rect(430, 5, 140, 32)
-    level_1_text = pg.font.Font(None, 40)
-    level_2_text = pg.font.Font(None, 40)
-    level_3_text = pg.font.Font(None, 40)
-    level_1_box = pg.Rect(10, 50, 32, 32)
-    level_2_box = pg.Rect(10, 100, 32, 32)
-    level_3_box = pg.Rect(10, 150, 32, 32)
+    global nick, screen  # global nick name, screen
+    pg.display.set_caption('spaceship vs meteorites')  # caption
+    screen = pg.display.set_mode((1000, 480))  # screen menu
+    font_input = pg.font.Font(None, 32)  # font input
+    input_box = pg.Rect(430, 5, 140, 32)  # input box
+    level_1_text = pg.font.Font(None, 40)  # font lvl1
+    level_2_text = pg.font.Font(None, 40)  # font lvl2
+    level_3_text = pg.font.Font(None, 40)  # font lvl3
+    level_1_box = pg.Rect(10, 50, 32, 32)  # level1 button
+    level_2_box = pg.Rect(10, 100, 32, 32)  # level2 button
+    level_3_box = pg.Rect(10, 150, 32, 32)  # level 3 button
     clock = pg.time.Clock()
-    color_inactive = pg.Color('lightskyblue3')
-    file = open('scores.txt', 'r', encoding='utf8')
+    color_inactive = pg.Color('lightskyblue3')  # color input box not active
+    file = open('scores.txt', 'r', encoding='utf8')  # open score file
+
+    # work with text and file
     scores = file.readlines()
     level_1_score = scores[0].split(' ')
     level_2_score = scores[1].split(' ')
@@ -185,53 +187,55 @@ def main():
     color_active = pg.Color('dodgerblue2')
     manual_nick = pg.font.Font(None, 32)
     text_manual = 'Press here and input your nickname -->'
-    color = color_inactive
-    active = False
-    text = ''
-    nick = 'NoName'
-    running = False
-    while not running:
 
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                running = True
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if input_box.collidepoint(event.pos):
+    color = color_inactive
+    active = False  # flag input box active
+    text = ''  # input text
+    nick = 'NoName'  # default nick
+    stop = False
+    while not stop:  # menu cycle
+        for event in pg.event.get():  # check events
+            if event.type == pg.QUIT:  # if close window
+                stop = True  # stop
+            if event.type == pg.MOUSEBUTTONDOWN:  # if mouse click
+                if input_box.collidepoint(event.pos):  # if mouse click in input box
                     active = not active
                 else:
                     active = False
                 color = color_active if active else color_inactive
-                if level_1_box.collidepoint(event.pos):
+                if level_1_box.collidepoint(event.pos):  # if click on lvl1
                     return 1
-                if level_2_box.collidepoint(event.pos):
+                if level_2_box.collidepoint(event.pos):  # if click on lvl2
                     return 2
-                if level_3_box.collidepoint(event.pos):
+                if level_3_box.collidepoint(event.pos):  # if click on lvl3
                     return 3
-            if event.type == pg.KEYDOWN:
+            if event.type == pg.KEYDOWN:  # if key down
                 if active:
-                    if event.key == pg.K_BACKSPACE:
+                    if event.key == pg.K_BACKSPACE:  # delete last sym from text
                         text = text[:-1]
-                    elif event.key == pg.K_RETURN:
+                    elif event.key == pg.K_RETURN:  # if enter
                         color = color_inactive
-                        active = False
+                        active = False  # input box not active
                     else:
-                        if len(text) < 34:
-                            text += event.unicode
+                        if len(text) < 34:  # max len nick 33
+                            text += event.unicode  # change text
                             nick = text
-        screen.fill((30, 30, 30))
-        txt_surface = font_input.render(text, True, color)
-        manual_r = manual_nick.render(text_manual, True, color_inactive)
-        lvl1 = level_1_text.render('Level 1', True, color_inactive)
-        lvl2 = level_2_text.render('Level 2', True, color_inactive)
-        lvl3 = level_3_text.render('Level 3', True, color_inactive)
+        screen.fill((30, 30, 30))  # gray color
+        txt_surface = font_input.render(text, True, color)  # render text
+        manual_r = manual_nick.render(text_manual, True, color_inactive)  # render text
+        lvl1 = level_1_text.render('Level 1', True, color_inactive)  # render text
+        lvl2 = level_2_text.render('Level 2', True, color_inactive)  # render text
+        lvl3 = level_3_text.render('Level 3', True, color_inactive)  # render text
         lvl1name = level_1_score_name.render(f'Leader: {level_1_score[0]} | points: {level_1_score[1][:-1]}',
-                                             True, color_inactive)
+                                             True, color_inactive)  # render text
         lvl2name = level_2_score_name.render(f'Leader: {level_2_score[0]} | points: {level_2_score[1][:-1]}',
-                                             True, color_inactive)
+                                             True, color_inactive)  # render text
         lvl3name = level_3_score_name.render(f'Leader: {level_3_score[0]} | points: {level_3_score[1]}',
-                                             True, color_inactive)
-        width = max(200, txt_surface.get_width()+10)
+                                             True, color_inactive)  # render text
+        width = max(200, txt_surface.get_width()+10)  # change width input box if nick don't fit
         input_box.w = width
+
+        # show text and buttons
         screen.blit(txt_surface, (input_box.x+5, input_box.y+5))
         screen.blit(manual_r, (10, 10))
         screen.blit(lvl1, (50, 50))
@@ -251,44 +255,31 @@ def main():
 
 
 def start_game(lvl):
-    global player, paused
+    global player, paused, screen  # global player, pause
     clock = pg.time.Clock()
     running = True
-    fps = 60
-    screen = pg.display.set_mode(size)
-    player = Player(lvl)
+    fps = 60  # fps
+    screen = pg.display.set_mode(size)  # screen game size
+    player = Player(lvl)  # player
     reload_1_bullet = pg.time.get_ticks()
-    bullets = 3 * lvl
-    bullets_text = pg.font.Font(None, 40)
-    score_text = pg.font.Font(None, 40)
-    animation_start = 0
-    background = load_image('background.png')
-    go_left, go_right, go_up, go_down = False, False, False, False
-    for i in range(lvl * 4):
+    bullets = 3 * lvl  # bullet count on lvl
+    bullets_text = pg.font.Font(None, 40)  # bullet font
+    score_text = pg.font.Font(None, 40)  # score font
+    animation_start = 0  # start animation flag
+    background = load_image('background.png')  # background image
+    go_left, go_right, go_up, go_down = False, False, False, False  # flag to move
+    for i in range(lvl * 4):  # generate meteorites on lvl
         Meteor(lvl)
     while running:
-        if not paused and not game_end:
-            if (pg.time.get_ticks() - reload_1_bullet) // 500 and bullets < 3 * lvl:
+        if not paused and not game_end:  # if not paused and not lose
+            if (pg.time.get_ticks() - reload_1_bullet) // 500 and bullets < 3 * lvl + 1:  # reload bullet
                 reload_1_bullet = pg.time.get_ticks()
                 bullets += 1
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_LEFT:
-                        go_left = True
-                    if event.key == pg.K_RIGHT:
-                        go_right = True
-                    if event.key == pg.K_UP:
-                        go_up = True
-                    if event.key == pg.K_DOWN:
-                        go_down = True
-                    if event.key == pg.K_SPACE:
-                        if bullets:
-                            Bullet((player.rect.x + player.size[0] // 2, player.rect.y))
-                            bullets -= 1
-                    if event.key == pg.K_p:
-                        paused = (paused + 1) % 2
+
+                # moves with arrows
                 if event.type == pg.KEYUP:
                     if event.key == pg.K_LEFT:
                         go_left = False
@@ -298,6 +289,25 @@ def start_game(lvl):
                         go_up = False
                     if event.key == pg.K_DOWN:
                         go_down = False
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_LEFT:
+                        go_left = True
+                    if event.key == pg.K_RIGHT:
+                        go_right = True
+                    if event.key == pg.K_UP:
+                        go_up = True
+                    if event.key == pg.K_DOWN:
+                        go_down = True
+
+                    # shoot
+                    if event.key == pg.K_SPACE:
+                        if bullets:
+                            Bullet((player.rect.x + player.size[0] // 2, player.rect.y))
+                            bullets -= 1
+                    if event.key == pg.K_p:
+                        paused = (paused + 1) % 2
+
+            # move
             if go_right:
                 player.move_r()
             if go_left:
@@ -306,25 +316,28 @@ def start_game(lvl):
                 player.move_u()
             if go_down:
                 player.move_d()
-            screen.blit(background, (0, 0))
+
+            screen.blit(background, (0, 0))  # background
+            hero_group.draw(screen)  # draw sprites
+            meteor_group.draw(screen)  # draw sprites
+            bullet_group.draw(screen)  # draw sprites
+            bullet_group.update()  # update sprites
+            meteor_group.update()  # update sprites
+
+            # show and render text
             text_bullets = bullets_text.render(f'bullet count {bullets}', True, pg.Color('white'))
             text_score = score_text.render(f'points {score_now}', True, pg.Color('white'))
-            hero_group.draw(screen)
-            meteor_group.draw(screen)
-            bullet_group.draw(screen)
-            bullet_group.update()
-            meteor_group.update()
             screen.blit(text_bullets, (10, 10))
             screen.blit(text_score, (10, 55))
             clock.tick(fps)
             pg.display.flip()
-        elif game_end:
+        elif game_end:  # if lose
             if not animation_start:
-                animation_start = pg.time.get_ticks()
+                animation_start = pg.time.get_ticks()  # start animation time
                 numbers = range(-5, 6)
-                for _ in range(score_now * 5):
+                for _ in range(score_now * 5):  # stars count
                     Particle((wight // 2, height // 2), choice(numbers), choice(numbers))
-            if (pg.time.get_ticks() - animation_start) // 1000 > 4:
+            if (pg.time.get_ticks() - animation_start) // 1000 > 4:  # finish animation (4 sec)
                 return screen
             screen.blit(background, (0, 0))
             text_bullets = bullets_text.render(f'bullet count {bullets}', True, pg.Color('white'))
@@ -341,6 +354,8 @@ def start_game(lvl):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
+
+                # move
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_p:
                         paused = (paused + 1) % 2
@@ -365,14 +380,14 @@ def start_game(lvl):
 
 def game_over(scr, lvl, screen):
     global nick
-    if not nick:
+    if not nick:  # if nick == ''
         nick = 'NoName'
-    file = open('scores.txt', 'r', encoding='utf8')
+    file = open('scores.txt', 'r', encoding='utf8')  # open file with score
     lines = file.readlines()
     if int(lines[lvl - 1].split()[-1]) < scr:
         lines[lvl - 1] = nick + ' ' + str(scr) + '\n'
     file.close()
-    file = open('scores.txt', 'w+', encoding='utf8')
+    file = open('scores.txt', 'w+', encoding='utf8')  # write new file with record
     file.write(lines[0])
     file.write(lines[1])
     file.write(lines[2])
@@ -381,24 +396,18 @@ def game_over(scr, lvl, screen):
     text_try_again = pg.font.Font(None, 40)
     tta = text_try_again.render('Try again', True, pg.Color('white'))
     box_try_again = pg.Rect(wight // 2 - tta.get_size()[0] // 2 - 3, height // 2 - tta.get_size()[1] // 2 - 3,
-                            tta.get_size()[0] + 6, tta.get_size()[1] + 6)
+                            tta.get_size()[0] + 6, tta.get_size()[1] + 6)  # button try again
     text_go_menu = pg.font.Font(None, 40)
     tga = text_go_menu.render('Go menu', True, pg.Color('white'))
     box_go_menu = pg.Rect(wight // 2 - tga.get_size()[0] // 2 - 3, height // 2 - tga.get_size()[1] // 2 - 3 + 50,
-                            tga.get_size()[0] + 6, tga.get_size()[1] + 6)
+                            tga.get_size()[0] + 6, tga.get_size()[1] + 6)  # button go menu
     text_exit = pg.font.Font(None, 40)
     te = text_exit.render('Close game', True, pg.Color('white'))
     box_exit = pg.Rect(wight // 2 - te.get_size()[0] // 2 - 3, height // 2 - te.get_size()[1] // 2 - 3 + 100,
-                            te.get_size()[0] + 6, te.get_size()[1] + 6)
-    # numbers = range(-5, 6)
-    # for _ in range(score_now * 3):
-    #     Particle((wight // 2, height // 2), choice(numbers), choice(numbers))
+                            te.get_size()[0] + 6, te.get_size()[1] + 6)  # button close game
+
     while running:
-        pg.draw.rect(screen, pg.Color('white'), box_exit, 3)
-        pg.draw.rect(screen, pg.Color('white'), box_go_menu, 3)
         for event in pg.event.get():
-            if event.type == pg.QUIT:
-                running = True
             if event.type == pg.MOUSEBUTTONDOWN:
                 if box_try_again.collidepoint(event.pos):
                     return 1
@@ -406,16 +415,19 @@ def game_over(scr, lvl, screen):
                     return 2
                 if box_exit.collidepoint(event.pos):
                     return 3
+        pg.draw.rect(screen, pg.Color('white'), box_exit, 3)
+        pg.draw.rect(screen, pg.Color('white'), box_go_menu, 3)
+        pg.draw.rect(screen, pg.Color('white'), box_try_again, 3)
+
+        # show text
         screen.blit(tta, (wight // 2 - tta.get_size()[0] // 2, height // 2 - tta.get_size()[1] // 2))
         screen.blit(tga, (wight // 2 - tga.get_size()[0] // 2, height // 2 - tga.get_size()[1] // 2 + 50))
         screen.blit(te, (wight // 2 - te.get_size()[0] // 2, height // 2 - te.get_size()[1] // 2 + 100))
-        pg.draw.rect(screen, pg.Color('white'), box_try_again, 2)
-        # stars.draw(screen)
-        # stars.update()
+
         pg.display.flip()
 
 
-def update_sprites():
+def update_sprites():  # clear all sprites, score, flags
     global hero_group, meteor_group, bullet_group, paused, score_now, game_end
     hero_group = pg.sprite.Group()
     meteor_group = pg.sprite.Group()
@@ -432,16 +444,15 @@ if __name__ == '__main__':
     screen = start_game(lvl)
     mode = game_over(score_now, lvl, screen)
     while not close:
-        if mode == 1:
+        if mode == 1:  # mode 1 try again
             update_sprites()
             screen = start_game(lvl)
             mode = game_over(score_now, lvl, screen)
-        elif mode == 2:
-            nick = 'NoName'
+        elif mode == 2:  # mode 2 go menu
             update_sprites()
             lvl = main()
             screen = start_game(lvl)
             mode = game_over(score_now, lvl, screen)
-        else:
+        else:  # mode 3 close game
             close = True
     pg.quit()
